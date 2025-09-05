@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, :root { height: 100%; }
+
+::selection { background: #FED7AA; color: #1F2937; } /* brand-200 */
+
+/* Tailwind v4 color tokens */
+@theme {
+  /* brand (orange) */
+  --color-brand-50:  #FFF7ED;
+  --color-brand-100: #FFEDD5;
+  --color-brand-200: #FED7AA;
+  --color-brand-300: #FDBA74;
+  --color-brand-400: #FB923C;
+  --color-brand-500: #F97316;
+  --color-brand-600: #F26D21;
+  --color-brand-700: #C2410C;
+  --color-brand-800: #9A3412;
+  --color-brand-900: #7C2D12;
+  --color-brand-950: #431407;
+
+  /* accent (indigo) */
+  --color-accent-50:  #EEF2FF;
+  --color-accent-100: #E0E7FF;
+  --color-accent-600: #4F46E5;
+  --color-accent-700: #4338CA;
+
+  /* success (emerald) */
+  --color-success-50:  #ECFDF5;
+  --color-success-100: #D1FAE5;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+
+  /* warning (amber) */
+  --color-warning-50:  #FFFBEB;
+  --color-warning-100: #FEF3C7;
+  --color-warning-600: #D97706;
+  --color-warning-700: #B45309;
+
+  /* danger (rose) */
+  --color-danger-50:  #FFF1F2;
+  --color-danger-100: #FFE4E6;
+  --color-danger-600: #E11D48;
+  --color-danger-700: #BE123C;
+
+  /* info (sky) */
+  --color-info-50:  #F0F9FF;
+  --color-info-100: #E0F2FE;
+  --color-info-600: #0284C7;
+  --color-info-700: #0369A1;
+}
+
+/* Link and focus states */
+a { @apply text-brand-700 hover:text-brand-800 underline decoration-brand-300/60 underline-offset-2; }
+:focus-visible { @apply outline-none ring-2 ring-brand-400 ring-offset-2 ring-offset-white; }
+
+/* Scrollbar styling for supported browsers */
+* { scrollbar-color: #FED7AA #fff; scrollbar-width: thin; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background-color: #FDBA74; border-radius: 9999px; border: 3px solid #fff; }
+*::-webkit-scrollbar-track { background-color: #fff; }
+
+/* App background decorations */
+.app-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(700px 400px at 15% 10%, rgba(242,109,33,0.14), transparent 45%), /* brand */
+    radial-gradient(600px 380px at 85% 12%, rgba(99,102,241,0.12), transparent 48%), /* accent indigo */
+    radial-gradient(800px 500px at 50% 85%, rgba(251,146,60,0.12), transparent 55%); /* brand-400 */
+}
+
+/* Component primitives */
+@layer components {
+  .glass { @apply bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 border border-white/60 shadow-sm; }
+  .card { @apply rounded-xl border border-brand-100 bg-white/80 shadow-sm ring-1 ring-brand-50; }
+  .toolbar { @apply rounded-lg border border-brand-200 bg-white/60 backdrop-blur p-2 shadow-sm; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-brand-600 to-accent-600 hover:from-brand-700 hover:to-accent-700 shadow; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 border border-brand-200 text-brand-700 hover:bg-brand-50; }
+  .gradient-text { @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-700 to-accent-700; }
+
+  /* Window shell with macOS-like controls */
+  .window { @apply card overflow-hidden; }
+  .window-header { @apply flex items-center gap-2 px-3 py-2 border-b border-brand-100 bg-white/60 backdrop-blur; }
+  .window-dot { @apply h-2.5 w-2.5 rounded-full; }
+}
