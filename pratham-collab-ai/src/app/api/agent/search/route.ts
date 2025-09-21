@@ -16,6 +16,6 @@ export async function POST(req: NextRequest) {
   });
   const data = await search.json();
   const answer = data?.answer ?? "No answer.";
-  const links = (data?.results ?? []).map((r: any) => ({ title: r.title, url: r.url }));
+  const links = (data?.results ?? []).map((r: { title: string; url: string }) => ({ title: r.title, url: r.url }));
   return NextResponse.json({ summary: answer, links });
 }

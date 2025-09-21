@@ -1,96 +1,59 @@
 "use client";
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, ElementType } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Collaboration from "@tiptap/extension-collaboration";
-import { Table } from "@tiptap/extension-table";
-import TableRow from "@tiptap/extension-table-row";
-import TableHeader from "@tiptap/extension-table-header";
-import TableCell from "@tiptap/extension-table-cell";
+import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
+import { Table, TableRow, TableHeader, TableCell } from "@tiptap/extension-table";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
-import { Awareness } from "y-protocols/awareness";
+import { Check, X, Wand2, Sparkles, AlignJustify, PartyPopper, MoveRight } from "lucide-react";
 
 type Props = {
-  roomId?: string; // tolerate undefined while URL params load
+  roomId: string;
   user: { name: string; color: string };
   onPreview: (args: { original: string; suggestion: string; format: "text" | "html"; apply: () => void }) => void;
 };
 
 export default function Editor({ roomId, user, onPreview }: Props) {
-  // Connection bundle
-  const [conn, setConn] = useState<{
-    doc: Y.Doc;
-    awareness: Awareness;
-    provider: WebsocketProvider;
-  } | null>(null);
-
-  // Create Doc + Awareness immediately; provider after we have a roomId
-  const baseDoc = useMemo(() => new Y.Doc(), []); // single Doc instance per mount
-  const baseAwareness = useMemo(() => new Awareness(baseDoc), [baseDoc]);
+  const [provider, setProvider] = useState<WebsocketProvider | null>(null);
+  const [wsError, setWsError] = useState(false);
+  const ydoc = useMemo(() => new Y.Doc(), [roomId]);
 
   useEffect(() => {
-    // If no room yet, keep a local editor running (no provider)
-    if (!roomId) {
-      setConn(null);
-      return;
-    }
+    const wsUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || process.env.COLLAB_WS_URL || "wss://demos.yjs.dev";
+    const p = new WebsocketProvider(wsUrl, "room-" + roomId, ydoc);
 
-    const wsUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || "wss://demos.yjs.dev";
-    const provider = new WebsocketProvider(wsUrl, `room-${roomId}`, baseDoc, { awareness: baseAwareness });
-
-    // Optional: small log to confirm provider status
-    provider.on("status", (e: any) => {
-      // console.log("[y-websocket]", e.status);
+    p.on("status", (event: { status: string }) => {
+      if (event.status === "disconnected") {
+        setWsError(true);
+      } else if (event.status === "connected") {
+        setWsError(false);
+      }
     });
 
-    setConn({ doc: baseDoc, awareness: baseAwareness, provider });
+    setProvider(p);
+    return () => p.destroy();
+  }, [roomId, ydoc]);
 
-    return () => {
-      try {
-        provider.destroy();
-      } catch {}
-      // Note: don't destroy baseDoc/baseAwareness here—they're reused if roomId changes back.
-    };
-  }, [roomId, baseDoc, baseAwareness]);
-
-  // Build extensions: start with safe local ones
-  const safeBase = useMemo(
-    () => [
-      StarterKit.configure({ history: false }),
+  const editor = useEditor({
+    editable: true,
+    immediatelyRender: false,
+    extensions: [
+      StarterKit.configure({}),
       Placeholder.configure({ placeholder: "Start typing… Select text to use AI tools." }),
       Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
+      TableRow, TableHeader, TableCell,
+      // Disable Collaboration extension if WebSocket error to prevent crash
+      ...(wsError ? [] : [Collaboration.configure({ document: ydoc })]),
+      ...(provider && !wsError ? [CollaborationCursor.configure({
+        provider: provider as any,
+        user
+      })] : [])
     ],
-    []
-  );
-
-  // Collaboration only (no cursor) to avoid version mismatch/runtime errors
-  const collab = useMemo(() => {
-    return [Collaboration.configure({ document: baseDoc })] as any[];
-  }, [baseDoc]);
-
-  // If we have a connection, run collaborative; otherwise local-only
-  const extensions = useMemo(() => (conn ? [...safeBase, ...collab] : safeBase), [conn, safeBase, collab]);
-
-  const editor = useEditor(
-    {
-      editable: true,
-      immediatelyRender: false,
-      extensions,
-      content: "<p>Welcome! Select some text and try the floating AI toolbar.</p>",
-    },
-    [extensions] // re-init when collab stack appears
-  );
-
-  // --- Utilities ---
-  function escapeHtml(s: string) {
-    return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-  }
+    content: "<p>Welcome! Select some text and try the floating AI toolbar.</p>",
+  }, [provider, wsError]);
 
   async function runAI(instruction: string) {
     if (!editor) return;
@@ -101,48 +64,56 @@ export default function Editor({ roomId, user, onPreview }: Props) {
     const res = await fetch("/api/ai-edit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ selection: original, instruction }),
-    }).then((r) => r.json());
+      body: JSON.stringify({ selection: original, instruction })
+    }).then(r => r.json());
 
     const suggestion: string = res?.editorUpdate?.content ?? "";
     const format: "text" | "html" = res?.editorUpdate?.format ?? "text";
 
     const apply = () => {
       if (!editor) return;
-      editor
-        .chain()
-        .focus()
-        .insertContentAt({ from, to }, format === "html" ? suggestion : escapeHtml(suggestion))
-        .run();
+      editor.chain().focus().insertContentAt({ from, to }, format === "html" ? suggestion : escapeHtml(suggestion)).run();
     };
 
     onPreview({ original, suggestion, format, apply });
   }
 
+  function escapeHtml(s: string) {
+    return s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  if (!editor) {
+    return <div>Loading editor...</div>;
+  }
+
+  if (wsError) {
+    return <div className="p-4 bg-yellow-100 text-yellow-800 rounded">Warning: Collaboration server connection failed. Editor is in read-only mode.</div>;
+  }
+
   return (
     <div className="h-full">
-      {editor && (
-        <div className="mb-3 toolbar">
-          <div className="flex flex-wrap items-center gap-2">
-          <Btn label="Fix grammar" onClick={() => runAI("Fix grammar and clarity, keep meaning.")} />
-          <Btn label="Shorten" onClick={() => runAI("Shorten aggressively but keep key info.")} />
-          <Btn label="Expand" onClick={() => runAI("Expand with one concise, helpful paragraph.")} />
-          <Btn label="Formal" onClick={() => runAI("Rewrite in a professional, formal tone.")} />
-          <Btn label="Casual" onClick={() => runAI("Rewrite in a friendly, casual tone.")} />
-          <Btn label="Convert to table" onClick={() => runAI("Convert to an HTML table. Return HTML with <table> only.")} />
-        </div>
-        </div>
-      )}
-      <div className="prose max-w-none card p-4 min-h-[60vh]">
+      <div className="flex items-center gap-2 rounded-xl border border-brand-200 bg-white/70 backdrop-blur px-2 py-2 shadow-sm sticky top-0 z-10">
+        <Btn label="Fix grammar" icon={Wand2} onClick={() => runAI("Fix grammar and clarity, keep meaning.")} />
+        <Btn label="Shorten" icon={MoveRight} onClick={() => runAI("Shorten aggressively but keep key info.")} />
+        <Btn label="Expand" icon={Sparkles} onClick={() => runAI("Expand with one concise, helpful paragraph.")} />
+        <Btn label="Formal" icon={AlignJustify} onClick={() => runAI("Rewrite in a professional, formal tone.")} />
+        <Btn label="Casual" icon={PartyPopper} onClick={() => runAI("Rewrite in a friendly, casual tone.")} />
+        <Btn label="Convert to table" icon={AlignJustify} onClick={() => runAI("Convert to an HTML table. Return HTML with <table> only.")} />
+      </div>
+      <div className="prose max-w-none bg-white border rounded-xl p-5 min-h-[60vh] shadow-sm mt-2">
         <EditorContent editor={editor} />
       </div>
     </div>
   );
 }
 
-function Btn({ label, onClick }: { label: string; onClick: () => void }) {
+function Btn({ label, icon: Icon, onClick }: { label: string; icon: ElementType<{ className?: string }>; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="text-xs px-2.5 py-1.5 rounded-md border border-brand-200 text-brand-700 hover:bg-brand-50 transition">
+    <button onClick={onClick} className="text-xs px-3 py-1.5 rounded-lg border border-brand-200 hover:bg-brand-50 transition-colors inline-flex items-center gap-1.5 text-brand-900">
+      <Icon className="w-3.5 h-3.5" />
       {label}
     </button>
   );

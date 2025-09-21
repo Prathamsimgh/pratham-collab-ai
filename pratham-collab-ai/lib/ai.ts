@@ -91,7 +91,7 @@ export async function chatToJSON(userTurns: ChatTurn[], options?: { extraSystem?
     } else {
       raw = JSON.stringify({ type: "assistant", message: "Demo mode: no API key configured." });
     }
-  } catch (err) {
+  } catch {
     raw = JSON.stringify({ type: "assistant", message: "AI service unavailable. Running in offline demo mode." });
   }
 

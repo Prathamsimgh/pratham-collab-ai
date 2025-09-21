@@ -1,56 +1,42 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google";
-
-const inter = Inter({ subsets: ["latin"] });
+import React from "react";
 
 export const metadata: Metadata = {
-  title: "Collaborative AI Editor — Pratham Singh",
-  description: "Live collab editor with AI edits and web search agent.",
+  title: "Pratham Collab AI - Live Collaborative Editor",
+  description: "Experience seamless real-time collaboration with AI-powered editing, intelligent suggestions, and a beautiful glass-morphism interface.",
+  keywords: "collaborative editor, AI writing, real-time collaboration, TipTap, Next.js",
+  authors: [{ name: "Pratham" }],
+  viewport: "width=device-width, initial-scale=1",
+  themeColor: "#F26D21",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.className} min-h-screen bg-gradient-to-br from-brand-50 to-white text-neutral-900`}
-        suppressHydrationWarning
-      >
-        {/* Ambient gradient background glows */}
-        <div className="app-bg"></div>
-
-        {/* Sticky translucent header */}
-        <header className="sticky top-0 z-40 border-b border-white/60 bg-white/40 backdrop-blur supports-[backdrop-filter]:bg-white/30 shadow-sm">
-          <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between">
-            <a href="/" className="font-semibold gradient-text">
-              Live Collaborative AI Editor
-            </a>
-            <nav className="flex items-center gap-2">
-              <a
-                className="btn-ghost text-sm"
-                href="https://liveeditor.vly.site/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Reference
-              </a>
-              <a
-                className="btn-ghost text-sm"
-                href="https://github.com/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                GitHub
-              </a>
+      <body className="min-h-screen bg-white text-gray-800 antialiased">
+        <div className="app-bg" />
+        <header className="sticky top-0 z-20 backdrop-blur border-b border-brand-100/80 bg-white/60">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex h-14 items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-brand-500" />
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent-600" />
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-brand-300" />
+              <span className="ml-2 sm:ml-3 font-semibold gradient-text text-sm sm:text-base">Pratham Collab AI</span>
+            </div>
+            <nav className="flex items-center gap-1 sm:gap-2">
+              <a className="btn-ghost text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5" href="https://vercel.com" target="_blank" rel="noreferrer">Deploy</a>
+              <a className="btn-primary text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5" href="https://github.com" target="_blank" rel="noreferrer">Star</a>
             </nav>
           </div>
         </header>
-
-        <main>{children}</main>
-
-        <footer className="border-t border-brand-100 mt-4 bg-brand-50/70">
-          <div className="mx-auto max-w-6xl px-4 py-3 text-sm text-brand-900/80">
-            Built by Pratham Singh · Demo only
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          {children}
+        </main>
+        <footer className="border-t border-brand-100/80 bg-white/60 backdrop-blur mt-auto">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
+            <span>Made with ❤️ for creative collaboration</span>
+            <span className="text-gray-400">v1.0 • Built with Next.js & TipTap</span>
           </div>
         </footer>
       </body>

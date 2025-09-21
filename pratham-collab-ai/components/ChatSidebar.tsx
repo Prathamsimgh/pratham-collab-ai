@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/core";
+import { Bot, User2, SendHorizonal, Wand2, Sparkles, Search } from "lucide-react";
 
-type Msg = { role: "user" | "assistant"; content: string; editorUpdate?: any };
+type Msg = { role: "user" | "assistant"; content: string; editorUpdate?: { apply: () => void; preview: string; format: "text" | "html" } };
 
 export default function ChatSidebar({ editor }: { editor: Editor | null }) {
   const [input, setInput] = useState("");
@@ -13,7 +14,14 @@ export default function ChatSidebar({ editor }: { editor: Editor | null }) {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  async function send() {
+  async function sendText(text?: string) {
+    const content = (text ?? input).trim();
+    if (!content) return;
+
+    const nextMessages = [...messages, { role: "user" as const, content }];
+    setMessages(nextMessages);
+    setInput("");
+
     try {
       const editorHTML = editor?.getHTML?.() ?? "";
       const from = editor?.state?.selection?.from;
@@ -24,11 +32,11 @@ export default function ChatSidebar({ editor }: { editor: Editor | null }) {
 
       const res = await fetch("/api/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, editorHTML, selection })
+        body: JSON.stringify({ messages: nextMessages, editorHTML, selection })
       }).then(r => r.json());
 
       if (res?.type === "editor_update" && res.editorUpdate) {
-        const { target, operation, format, content, applyImmediately } = res.editorUpdate;
+        const { target, operation, format, content, applyImmediately } = res.editorUpdate as any;
         const apply = () => {
           if (!editor) return;
           if (target === "document") {
@@ -43,13 +51,12 @@ export default function ChatSidebar({ editor }: { editor: Editor | null }) {
             }
           }
         };
-        setMessages(m => [...m, { role: "assistant", content: "I prepared an edit. Preview and confirm to apply.", editorUpdate: { apply, preview: content, format } }]);
+        setMessages(m => [...m, { role: "assistant", content: "I prepared an edit. Preview and confirm to apply.", editorUpdate: { apply, preview: res.editorUpdate.content, format: res.editorUpdate.format } }]);
         if (applyImmediately) apply();
       } else {
         setMessages(m => [...m, { role: "assistant", content: res?.message ?? "" }]);
       }
-      setInput("");
-    } catch (e) {
+    } catch {
       setMessages(m => [...m, { role: "assistant", content: "Chat failed. Please try again." }]);
     }
   }
@@ -63,51 +70,93 @@ export default function ChatSidebar({ editor }: { editor: Editor | null }) {
 
       setMessages(m => [...m, { role: "assistant", content: "Agent summary:\n" + (res?.summary ?? "") }]);
       if (editor && res?.summary) editor.commands.insertContent("<blockquote>" + res.summary + "</blockquote>");
-    } catch (e) {
+    } catch {
       setMessages(m => [...m, { role: "assistant", content: "Agent failed. Please try again." }]);
     }
   }
 
   return (
-  <div className="h-full flex flex-col">
-  <div className="flex-1 overflow-auto p-3 space-y-3">
-  {messages.map((m, i) => (
-  <div key={i} className={m.role === "user" ? "text-right" : ""}>
-  <div className={m.role === "user"
-  ? "inline-block rounded-lg px-3 py-2 text-sm bg-accent-50 text-accent-900 border border-accent-100"
-  : "inline-block rounded-lg px-3 py-2 text-sm bg-brand-50 text-brand-900 border border-brand-100"}>
-  {m.content}
-  {m.editorUpdate?.preview && (
-  <div className="mt-2">
-  <div className="text-xs text-brand-700 mb-1">AI suggestion preview</div>
-  <div className="border border-brand-200 rounded bg-white p-2 text-left max-h-40 overflow-auto whitespace-pre-wrap">
-  {m.editorUpdate.format === "html"
-  ? <div dangerouslySetInnerHTML={{ __html: m.editorUpdate.preview }} />
-  : m.editorUpdate.preview}
-  </div>
-  <button className="mt-2 text-xs px-2 py-1 border border-brand-200 rounded bg-white hover:bg-brand-50 text-brand-700"
-  onClick={() => m.editorUpdate.apply()}>
-  Confirm and Apply
-  </button>
-  </div>
-  )}
-  </div>
-  </div>
-  ))}
-  <div ref={bottomRef} />
-  </div>
-  <div className="p-3 border-t border-brand-100 bg-white/60 backdrop-blur space-y-2">
-  <div className="flex gap-2">
-  <input className="flex-1 border border-brand-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400" placeholder="Ask or say: fix my selection"
-  value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} />
-  <button className="px-3 py-2 text-sm rounded bg-brand-600 hover:bg-brand-700 text-white shadow-sm" onClick={send}>Send</button>
-  </div>
-  <div className="flex gap-2">
-  <button className="text-xs px-2 py-1 border border-brand-200 rounded text-brand-700 hover:bg-brand-50" onClick={() => runAgent("Latest news on Next.js 15, summarize key changes.")}> 
-  Agent: Next.js 15 news → insert
-  </button>
-  </div>
-  </div>
-  </div>
+    <div className="h-full flex flex-col">
+      <div className="flex-1 overflow-auto px-3 py-3 space-y-3">
+        {messages.map((m, i) => (
+          <div key={i} className={m.role === "user" ? "text-right" : ""}>
+            <div className={
+              m.role === "user"
+                ? "inline-flex items-start gap-2 rounded-2xl px-3 py-2 text-sm bg-accent-50 text-accent-900 border border-accent-100 shadow-sm"
+                : "inline-flex items-start gap-2 rounded-2xl px-3 py-2 text-sm bg-brand-50 text-brand-900 border border-brand-100 shadow-sm"
+            }>
+              <div className={"mt-0.5 shrink-0 rounded-full p-1 " + (m.role === "user" ? "bg-accent-100" : "bg-brand-100")}>
+                {m.role === "user" ? <User2 className="w-3.5 h-3.5 text-accent-700" /> : <Bot className="w-3.5 h-3.5 text-brand-700" />}
+              </div>
+              <div>
+                <div>{m.content}</div>
+                {m.editorUpdate?.preview && (
+                  <div className="mt-2">
+                    <div className="text-xs text-brand-700 mb-1">AI suggestion preview</div>
+                    <div className="border border-brand-200 rounded bg-white p-2 text-left max-h-40 overflow-auto whitespace-pre-wrap">
+                      {m.editorUpdate.format === "html"
+                        ? <div dangerouslySetInnerHTML={{ __html: m.editorUpdate.preview }} />
+                        : m.editorUpdate.preview}
+                    </div>
+                    <button className="mt-2 text-xs px-2 py-1 border border-brand-200 rounded bg-white hover:bg-brand-50 text-brand-700"
+                      onClick={() => m.editorUpdate?.apply()}>
+                      Confirm and Apply
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        <div ref={bottomRef} />
+      </div>
+
+      <div className="p-3 border-t border-brand-100 space-y-3" style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(10px)' }}>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 flex items-center gap-2 rounded-full border border-brand-200 bg-white/80 px-3 py-2 shadow-sm">
+            <Wand2 className="w-4 h-4 text-brand-600" />
+            <input
+              className="flex-1 bg-transparent text-sm focus:outline-none"
+              placeholder="Ask or say: fix my selection"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && sendText()}
+            />
+          </div>
+          <button
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-sm"
+            onClick={() => sendText()}
+            aria-label="Send"
+            title="Send"
+          >
+            <SendHorizonal className="w-4 h-4" />
+            Send
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button className="text-xs px-2 py-1 rounded-full border border-brand-200 hover:bg-brand-50 text-brand-700"
+            onClick={() => sendText("Improve the selected text for clarity and tone.")}
+          >
+            <Sparkles className="w-3.5 h-3.5 inline -mt-0.5 mr-1" /> Improve writing
+          </button>
+          <button className="text-xs px-2 py-1 rounded-full border border-brand-200 hover:bg-brand-50 text-brand-700"
+            onClick={() => sendText("Summarize the current document in 3 bullet points.")}
+          >
+            <Wand2 className="w-3.5 h-3.5 inline -mt-0.5 mr-1" /> Summarize
+          </button>
+          <button className="text-xs px-2 py-1 rounded-full border border-brand-200 hover:bg-brand-50 text-brand-700"
+            onClick={() => sendText("Create a concise outline for the current document.")}
+          >
+            <Wand2 className="w-3.5 h-3.5 inline -mt-0.5 mr-1" /> Outline
+          </button>
+          <button className="text-xs px-2 py-1 rounded-full border border-brand-200 hover:bg-brand-50 text-brand-700"
+            onClick={() => runAgent("Research the topic mentioned in my selection and provide a brief summary with sources.")}
+          >
+            <Search className="w-3.5 h-3.5 inline -mt-0.5 mr-1" /> Agent: topic research
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
