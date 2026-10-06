@@ -8,7 +8,7 @@ import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { Table, TableRow, TableHeader, TableCell } from "@tiptap/extension-table";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
-import { Check, X, Wand2, Sparkles, AlignJustify, PartyPopper, MoveRight } from "lucide-react";
+import { Wand2, Sparkles, AlignJustify, PartyPopper, MoveRight } from "lucide-react";
 
 type Props = {
   roomId: string;
@@ -48,7 +48,8 @@ export default function Editor({ roomId, user, onPreview }: Props) {
       // Disable Collaboration extension if WebSocket error to prevent crash
       ...(wsError ? [] : [Collaboration.configure({ document: ydoc })]),
       ...(provider && !wsError ? [CollaborationCursor.configure({
-        provider: provider as any,
+        // y-websocket provider here; CollaborationCursor's types expect a Hocuspocus provider
+        provider: provider as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         user
       })] : [])
     ],
