@@ -36,7 +36,13 @@ export default function ChatSidebar({ editor }: { editor: Editor | null }) {
       }).then(r => r.json());
 
       if (res?.type === "editor_update" && res.editorUpdate) {
-        const { target, operation, format, content, applyImmediately } = res.editorUpdate as any;
+        const { target, operation, format, content, applyImmediately } = res.editorUpdate as {
+          target: string;
+          operation: string;
+          format: "text" | "html";
+          content: string;
+          applyImmediately?: boolean;
+        };
         const apply = () => {
           if (!editor) return;
           if (target === "document") {
