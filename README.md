@@ -119,6 +119,17 @@ pratham-collab-ai/
 5. **Open your browser**
    Visit `http://localhost:3000` to see the editor in action!
 
+### Available Scripts
+
+Run these from the `pratham-collab-ai` directory:
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start the development server with Turbopack |
+| `npm run build` | Create an optimized production build |
+| `npm run start` | Run the production build locally |
+| `npm run lint` | Run ESLint over the codebase |
+
 ## 🌐 Deployment
 
 ### Deploy to Vercel (Recommended)
