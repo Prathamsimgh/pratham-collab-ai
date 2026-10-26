@@ -130,6 +130,13 @@ Run these from the `pratham-collab-ai` directory:
 | `npm run start` | Run the production build locally |
 | `npm run lint` | Run ESLint over the codebase |
 
+### Demo mode
+
+No API keys are needed to try the editor itself: without an AI provider
+key, editing and real-time collaboration still work, and only the
+AI-powered features (chat sidebar, AI edit toolbar, and web search)
+are unavailable. Add at least one AI provider key for full functionality.
+
 ## 🌐 Deployment
 
 ### Deploy to Vercel (Recommended)
