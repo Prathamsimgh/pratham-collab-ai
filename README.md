@@ -207,6 +207,17 @@ By default, the app uses `wss://demos.yjs.dev` for collaboration. For production
 - [Liveblocks](https://liveblocks.io/) - Managed collaboration service
 - [PartyKit](https://www.partykit.io/) - Real-time collaboration platform
 
+## 🔍 Troubleshooting
+
+- **Port already in use:** if the dev server fails to start, another process
+  is holding port 3000 — stop it or run with `PORT=3001 npm run dev`.
+- **AI features not responding:** without API keys the app runs in demo
+  mode (see [Demo mode](#demo-mode)); add `OPENAI_API_KEY` or
+  `OPENROUTER_API_KEY` to `.env.local` for live AI responses.
+- **Collaboration not syncing:** the editor needs the Yjs WebSocket server
+  running (see [Collaboration Server](#collaboration-server)); check it is
+  up before opening a second client.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
